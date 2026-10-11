@@ -217,3 +217,8 @@
 - Fixed the npm `source-map-js` high-severity advisory with a patched-version override. Added high-severity npm/Python audit checks in CI and weekly dependency update automation.
 - Verification: frontend production build passed; `npm audit --audit-level=high` reports zero findings. Backend regression tests were added but could not run here because the available Python interpreter has no FastAPI installation. Render deployment and live security headers remain unverified.
 - See `docs/SECURITY_REVIEW.md`; process-local rate limits, MFA/account recovery/session revocation, action SHA pinning, and production edge protections remain follow-up work.
+
+## 2026-10-11 — GitHub sign-in mark correction
+
+- Replaced the old GitHub icon path with GitHub Primer's current `mark-github-24` vector and corrected the icon contrast to black on white in both themes. The previous white fill made the circular mark look like a white blob with a dark cat cutout.
+- Verified the frontend production build and visually checked the sign-in page in light and dark modes. Sign-in and sign-up share the same provider component.

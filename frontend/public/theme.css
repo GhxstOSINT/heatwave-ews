@@ -94,7 +94,7 @@ html[data-theme="dark"] .table-wrap { border-color: #40584a; }
 html[data-theme="dark"] .maplibregl-ctrl-group { background: #203328; border-color: #536b58; }
 html[data-theme="dark"] .maplibregl-ctrl-group button + button { border-top-color: #536b58; }
 html[data-theme="dark"] .maplibregl-ctrl-icon { filter: invert(.84) sepia(.12) saturate(.55); }
-html[data-theme="dark"] .auth-provider-mark.github { color: #fff; background: #243329; }
+html[data-theme="dark"] .auth-provider-mark.github { color: #000; background: #fff; }
 
 /* Browser chrome belongs to the same system in both themes. */
 ::selection { color: #fff; background: #a9471a; }

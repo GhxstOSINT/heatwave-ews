@@ -38,7 +38,7 @@
 .auth-provider small { color: #607068; font-size: .69rem; font-weight: 500; }
 .auth-provider-mark { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 5px; color: #173e32; background: #e7eee8; font-size: .78rem; font-weight: 800; letter-spacing: -.03em; }
 .auth-provider-mark.google { color: #346ac8; background: #eef3fd; font-size: 1rem; }
-.auth-provider-mark.github { color: #fff; background: #243329; font-size: .62rem; }
+.auth-provider-mark.github { color: #000; background: #fff; font-size: .62rem; }
 .auth-provider-note { margin-top: 12px; }
 .auth-divider { display: flex; align-items: center; gap: 16px; margin: 27px 0; color: #65736b; font-size: .72rem; white-space: nowrap; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: #ccd6ce; }
@@ -76,7 +76,7 @@
 .auth-provider-mark { width: 30px; height: 30px; border-radius: 8px; }
 .auth-provider-mark svg { display: block; width: 19px; height: 19px; }
 .auth-provider-mark.google { background: #fff; }
-.auth-provider-mark.github { color: #fff; background: #243329; }
+.auth-provider-mark.github { color: #000; background: #fff; }
 .auth-provider small { justify-self: end; font-size: .72rem; }
 .auth-provider:not(.unavailable):focus-visible { outline: 3px solid #176f8a; outline-offset: 3px; }
 .auth-provider.unavailable { border-style: dashed; }
