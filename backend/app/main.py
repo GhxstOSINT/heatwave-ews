@@ -2,6 +2,7 @@
 
 import json
 import hmac
+import logging
 import os
 import re
 import shutil
@@ -35,6 +36,9 @@ from models.health_data import HealthObservationBatch
 from models.health_impact import load_health_impact_config, relative_risk_sensitivity
 from models.ward_impact import response_priority
 from pipeline.open_health_data import load_manifest, seed_open_health_reference
+
+
+logger = logging.getLogger(__name__)
 
 
 class SMSDispatchRequest(BaseModel):
@@ -272,7 +276,20 @@ def oauth_callback(provider: str, request: Request, code: str = "", state: str =
     try:
         pending = read_pending(request.cookies.get(OAUTH_COOKIE, ""), provider, state)
         base = public_base_url(str(request.base_url))
+    except ValueError:
+        logger.warning("OAuth callback rejected: provider=%s stage=state_or_origin", provider)
+        return RedirectResponse(f"{_app_origin(request)}/login.html?error=provider_state", status_code=303)
+    try:
         subject, label = exchange_identity(provider, code, pending["verifier"], f"{base}/auth/oauth/{provider}/callback")
+    except requests.HTTPError as failure:
+        status = failure.response.status_code if failure.response is not None else None
+        logger.warning("OAuth callback rejected: provider=%s stage=provider_http status=%s", provider, status)
+        reason = "provider_setup" if status in {400, 401, 403} else "provider_failed"
+        return RedirectResponse(f"{_app_origin(request)}/login.html?error={reason}", status_code=303)
+    except (ValueError, requests.RequestException) as failure:
+        logger.warning("OAuth callback rejected: provider=%s stage=identity error_type=%s", provider, type(failure).__name__)
+        return RedirectResponse(f"{_app_origin(request)}/login.html?error=provider_failed", status_code=303)
+    try:
         with psycopg.connect(_database_url()) as connection, connection.cursor() as cursor:
             cursor.execute("SELECT u.user_id, u.username, u.role FROM oauth_identities i JOIN users u ON u.user_id = i.user_id WHERE i.provider = %s AND i.provider_subject = %s", (provider, subject))
             row = cursor.fetchone()
@@ -287,8 +304,9 @@ def oauth_callback(provider: str, request: Request, code: str = "", state: str =
         response.set_cookie(SESSION_COOKIE, issue_session(identity), max_age=8 * 60 * 60, httponly=True, secure=_cookie_secure(request), samesite="lax", path="/")
         response.delete_cookie(OAUTH_COOKIE, path="/auth/oauth")
         return response
-    except (ValueError, requests.RequestException, psycopg.Error):
-        return RedirectResponse(f"{_app_origin(request)}/login.html?error=provider_failed", status_code=303)
+    except psycopg.Error as failure:
+        logger.warning("OAuth callback rejected: provider=%s stage=account_storage error_type=%s", provider, type(failure).__name__)
+        return RedirectResponse(f"{_app_origin(request)}/login.html?error=provider_storage", status_code=303)
 
 
 @app.get("/auth/session")

@@ -193,3 +193,10 @@
 - Added brief enter/exit transitions for internal page navigation and interaction feedback, while respecting reduced-motion settings. Alert-category colors remain semantic data colors.
 - Allowed the two shared theme assets through strict authentication so the public pages can load them before sign-in.
 - Verified the frontend production build and 115 backend tests. On the live Render deployment, checked landing/sign-in/sign-up navigation and light/dark persistence in the browser.
+
+## 2026-10-11 — first-time account authentication follow-up
+
+- Added the same configured Google and GitHub entry points to sign-up as sign-in. A first-time provider identity is provisioned as a viewer by the existing callback; returning identities sign in through the same flow.
+- Email registration and password sign-in now retain the server-issued session token in the tab as a fallback when the browser does not persist the HttpOnly cookie. The cookie remains the primary session mechanism.
+- Split provider callback failures into safe categories (state/origin, provider configuration, identity exchange, account storage) and log only provider, stage, HTTP status or exception type—never authorization codes or tokens. The login page gives a specific recovery message for configuration and storage failures.
+- Live Render logs showed prior Google callbacks ending on the generic provider-failed page. The exact upstream cause is not yet known; a fresh attempt after deploying this change is needed to identify and correct that configuration or storage error. GitHub's OAuth app has a configured callback but no completed users at this point.

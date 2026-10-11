@@ -1,14 +1,9 @@
 import { FormEvent, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { API, AuthConfig, LoginResponse, User, getJson, send, setSessionToken } from "./api";
+import { AuthConfig, LoginResponse, User, getJson, send, setSessionToken } from "./api";
+import { AuthProviders } from "./AuthProviders";
 import "./styles.css";
 import "./login.css";
-
-type Provider = "google" | "github";
-const providers: { id: Provider; label: string; mark: string }[] = [
-  { id: "google", label: "Google", mark: "G" },
-  { id: "github", label: "GitHub", mark: "GH" },
-];
 
 function safeDestination() {
   const value = new URLSearchParams(window.location.search).get("next");
@@ -22,7 +17,14 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(() => {
     const code = new URLSearchParams(window.location.search).get("error");
-    return code === "provider_denied" ? "Sign-in was cancelled. Choose a method to try again." : code === "provider_failed" ? "The provider could not complete sign-in. Please retry or use your assigned account." : "";
+    const messages: Record<string, string> = {
+      provider_denied: "Sign-in was cancelled. Choose a method to try again.",
+      provider_state: "The sign-in session expired or was interrupted. Start again from this page, using one provider at a time.",
+      provider_setup: "This sign-in provider rejected the app configuration. Please use email sign-in while the site administrator checks its OAuth credentials.",
+      provider_storage: "The provider verified you, but HeatSafe AI could not create your viewer account. Please try again later or contact the site administrator.",
+      provider_failed: "The provider could not complete sign-in. Please retry or use email and password.",
+    };
+    return code ? messages[code] ?? "Sign-in could not be completed. Please try again." : "";
   });
   const destination = safeDestination();
 
@@ -37,7 +39,7 @@ function Login() {
     setBusy(true);
     setError("");
     send<LoginResponse>("POST", "/auth/login", { username: username.trim(), password })
-      .then(() => { if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
+      .then((result) => { setSessionToken(result.token); if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
       .catch((reason: Error) => setError(reason.message === "Failed to fetch" ? "The sign-in service is unavailable. Please wait a moment and try again." : reason.message))
       .finally(() => setBusy(false));
   };
@@ -66,16 +68,7 @@ function Login() {
         <div className="auth-form-wrap">
           <h2>Welcome back.</h2>
           <p className="auth-intro">Sign in to open the HeatSafe AI dashboard.</p>
-          <div className="auth-provider-list" aria-label="Continue with a provider">
-            {providers.map(({ id, label, mark }) => {
-              const enabled = config?.providers.includes(id) ?? false;
-              return <a key={id} className={`auth-provider ${enabled ? "" : "unavailable"}`} href={enabled ? `${API}/auth/oauth/${id}/start?next=${encodeURIComponent(destination)}` : undefined} aria-disabled={!enabled} tabIndex={enabled ? 0 : -1}>
-                <span className={`auth-provider-mark ${id}`} aria-hidden="true">{mark}</span>
-                <span>Continue with {label}</span>
-                <small>{enabled ? "→" : "Not configured"}</small>
-              </a>;
-            })}
-          </div>
+          <AuthProviders config={config} destination={destination} action="sign in" />
           <div className="auth-divider"><span>or use your email and password</span></div>
           <form className="auth-form" onSubmit={submit}>
             <label htmlFor="auth-username">Email or assigned username</label>

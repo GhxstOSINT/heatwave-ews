@@ -1,6 +1,7 @@
 import { FormEvent, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AuthConfig, LoginResponse, User, getJson, send, setSessionToken } from "./api";
+import { AuthProviders } from "./AuthProviders";
 import "./styles.css";
 import "./login.css";
 
@@ -27,7 +28,7 @@ function Signup() {
     setBusy(true);
     setError("");
     send<LoginResponse>("POST", "/auth/register", { email: email.trim(), password })
-      .then(() => { if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
+      .then((result) => { setSessionToken(result.token); if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
       .catch((reason: Error) => setError(reason.message === "Failed to fetch" ? "The account service is unavailable. Please try again shortly." : reason.message))
       .finally(() => setBusy(false));
   };
@@ -55,8 +56,11 @@ function Signup() {
         <div className="auth-form-wrap">
           <h2>Create your account.</h2>
           <p className="auth-intro">Set up read-only access to the HeatSafe AI dashboard.</p>
+          <AuthProviders config={config} destination={destination} action="sign up" />
+          {config?.providers.length ? <p className="auth-help auth-provider-note">A new Google or GitHub identity receives viewer access automatically. An existing identity signs in.</p> : null}
+          {config?.email_registration && <div className="auth-divider"><span>or create an account with email</span></div>}
           {config && !config.email_registration ? (
-            <p className="auth-help">Account creation is not enabled here. <a href="/login.html">Return to sign in</a> or ask your administrator for access.</p>
+            <p className="auth-help">Email account creation is not enabled here. {config.providers.length ? "You can continue with a provider above." : "Ask your administrator for access."}</p>
           ) : (
             <form className="auth-form" onSubmit={submit}>
               <label htmlFor="signup-email">Email address</label>

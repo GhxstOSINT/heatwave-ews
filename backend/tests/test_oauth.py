@@ -2,10 +2,11 @@
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
 from fastapi.testclient import TestClient
+import requests
 
 from app.main import app
 from app.oauth import authorization_url, configured_providers, make_pending, read_pending, safe_next
@@ -55,3 +56,34 @@ class OAuthContractTest(unittest.TestCase):
             client = TestClient(app)
             self.assertEqual(client.get("/districts").status_code, 401)
             self.assertEqual(client.get("/auth/config").status_code, 200)
+
+    def test_first_time_google_identity_creates_viewer_and_session(self) -> None:
+        with patch.dict(os.environ, {"PUBLIC_BASE_URL": "https://heatsafe.example", "DATABASE_URL": "postgresql://unused"}):
+            client = TestClient(app, base_url="https://heatsafe.example")
+            start = client.get("/auth/oauth/google/start", follow_redirects=False)
+            self.assertEqual(start.status_code, 302)
+            state = parse_qs(urlparse(start.headers["location"]).query)["state"][0]
+            connection = MagicMock()
+            connection.__enter__.return_value = connection
+            cursor = connection.cursor.return_value.__enter__.return_value
+            cursor.fetchone.return_value = None
+            with patch("app.main.exchange_identity", return_value=("google-subject-1", "New viewer")), patch("app.main.psycopg.connect", return_value=connection):
+                result = client.get("/auth/oauth/google/callback", params={"code": "test-code", "state": state}, follow_redirects=False)
+            self.assertEqual(result.status_code, 303)
+            self.assertEqual(result.headers["location"], "https://heatsafe.example/dashboard.html")
+            self.assertIn("heatsafe_session=", result.headers["set-cookie"])
+            statements = [call.args[0] for call in cursor.execute.call_args_list]
+            self.assertTrue(any("INSERT INTO users" in statement and "'viewer'" in statement for statement in statements))
+            self.assertTrue(any("INSERT INTO oauth_identities" in statement for statement in statements))
+
+    def test_provider_configuration_failure_has_specific_recovery_code(self) -> None:
+        with patch.dict(os.environ, {"PUBLIC_BASE_URL": "https://heatsafe.example"}):
+            client = TestClient(app, base_url="https://heatsafe.example")
+            start = client.get("/auth/oauth/google/start", follow_redirects=False)
+            state = parse_qs(urlparse(start.headers["location"]).query)["state"][0]
+            provider_response = requests.Response()
+            provider_response.status_code = 401
+            with patch("app.main.exchange_identity", side_effect=requests.HTTPError(response=provider_response)):
+                result = client.get("/auth/oauth/google/callback", params={"code": "test-code", "state": state}, follow_redirects=False)
+            self.assertEqual(result.status_code, 303)
+            self.assertEqual(result.headers["location"], "https://heatsafe.example/login.html?error=provider_setup")
