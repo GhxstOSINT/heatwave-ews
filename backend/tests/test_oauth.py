@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 import requests
 
 from app.main import app
-from app.oauth import authorization_url, configured_providers, make_pending, read_pending, safe_next
+from app.oauth import ProviderHTTPError, authorization_url, configured_providers, exchange_identity, make_pending, read_pending, safe_next
 
 
 class OAuthContractTest(unittest.TestCase):
@@ -87,3 +87,25 @@ class OAuthContractTest(unittest.TestCase):
                 result = client.get("/auth/oauth/google/callback", params={"code": "test-code", "state": state}, follow_redirects=False)
             self.assertEqual(result.status_code, 303)
             self.assertEqual(result.headers["location"], "https://heatsafe.example/login.html?error=provider_setup")
+
+    def test_provider_http_error_identifies_token_exchange_without_exposing_body(self) -> None:
+        response = requests.Response()
+        response.status_code = 401
+        response._content = b'{"error":"invalid_client","client_secret":"do-not-log"}'
+        with patch("app.oauth.requests.post", return_value=response):
+            with self.assertRaises(ProviderHTTPError) as caught:
+                exchange_identity("google", "code", "verifier", "https://heatsafe.example/auth/oauth/google/callback")
+        self.assertEqual(caught.exception.phase, "token_exchange")
+        self.assertEqual(caught.exception.response.status_code, 401)
+        self.assertNotIn("do-not-log", str(caught.exception))
+
+    def test_provider_http_error_identifies_userinfo(self) -> None:
+        token_response = requests.Response()
+        token_response.status_code = 200
+        token_response._content = b'{"access_token":"test-token"}'
+        identity_response = requests.Response()
+        identity_response.status_code = 401
+        with patch("app.oauth.requests.post", return_value=token_response), patch("app.oauth.requests.get", return_value=identity_response):
+            with self.assertRaises(ProviderHTTPError) as caught:
+                exchange_identity("google", "code", "verifier", "https://heatsafe.example/auth/oauth/google/callback")
+        self.assertEqual(caught.exception.phase, "userinfo")

@@ -283,7 +283,7 @@ def oauth_callback(provider: str, request: Request, code: str = "", state: str =
         subject, label = exchange_identity(provider, code, pending["verifier"], f"{base}/auth/oauth/{provider}/callback")
     except requests.HTTPError as failure:
         status = failure.response.status_code if failure.response is not None else None
-        logger.warning("OAuth callback rejected: provider=%s stage=provider_http status=%s", provider, status)
+        logger.warning("OAuth callback rejected: provider=%s stage=%s status=%s", provider, getattr(failure, "phase", "provider_http"), status)
         reason = "provider_setup" if status in {400, 401, 403} else "provider_failed"
         return RedirectResponse(f"{_app_origin(request)}/login.html?error={reason}", status_code=303)
     except (ValueError, requests.RequestException) as failure:

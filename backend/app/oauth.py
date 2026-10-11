@@ -31,6 +31,14 @@ class Provider:
     scope: str
 
 
+class ProviderHTTPError(requests.HTTPError):
+    """Provider rejection with a safe, non-secret phase for diagnostics."""
+
+    def __init__(self, phase: str, response: requests.Response):
+        super().__init__(response=response)
+        self.phase = phase
+
+
 PROVIDERS = {
     "google": Provider("google", "https://accounts.google.com/o/oauth2/v2/auth", "https://oauth2.googleapis.com/token", "https://openidconnect.googleapis.com/v1/userinfo", "openid email profile"),
     "github": Provider("github", "https://github.com/login/oauth/authorize", "https://github.com/login/oauth/access_token", "https://api.github.com/user", "read:user"),
@@ -125,12 +133,18 @@ def exchange_identity(provider: str, code: str, verifier: str, redirect_uri: str
         raise ValueError("Sign-in provider is not configured")
     config = PROVIDERS[provider]
     response = requests.post(config.token_url, data={"client_id": credentials[0], "client_secret": credentials[1], "code": code, "code_verifier": verifier, "redirect_uri": redirect_uri, "grant_type": "authorization_code"}, headers={"Accept": "application/json"}, timeout=12)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as failure:
+        raise ProviderHTTPError("token_exchange", response) from failure
     access_token = response.json().get("access_token")
     if not isinstance(access_token, str) or not access_token:
         raise ValueError("Provider did not issue an access token")
     identity_response = requests.get(config.userinfo_url, headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json", "User-Agent": "HeatSafe-AI/1.0"}, timeout=12)
-    identity_response.raise_for_status()
+    try:
+        identity_response.raise_for_status()
+    except requests.HTTPError as failure:
+        raise ProviderHTTPError("userinfo", identity_response) from failure
     profile = identity_response.json()
     subject = profile.get("id") if provider == "github" else profile.get("sub")
     if subject is None or not str(subject):
