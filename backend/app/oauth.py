@@ -37,6 +37,12 @@ class ProviderHTTPError(requests.HTTPError):
     def __init__(self, phase: str, response: requests.Response):
         super().__init__(response=response)
         self.phase = phase
+        try:
+            provider_error = response.json().get("error")
+        except (ValueError, AttributeError):
+            provider_error = None
+        allowed_errors = {"invalid_client", "invalid_grant", "unauthorized_client", "invalid_request", "redirect_uri_mismatch", "access_denied", "unsupported_grant_type"}
+        self.error_code = provider_error if isinstance(provider_error, str) and provider_error in allowed_errors else "other"
 
 
 PROVIDERS = {
