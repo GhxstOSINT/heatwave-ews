@@ -40,7 +40,7 @@ python-dateutil==2.9.0.post0
 pytz==2026.1.post1
 PyYAML==6.0.3
 rasterio==1.5.1
-requests==2.32.5
+requests==2.33.0
 rioxarray==0.23.0
 scipy==1.18.1
 setuptools==84.0.0
@@ -52,7 +52,7 @@ truststore==0.10.4
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2025.3
-urllib3==2.5.0
+urllib3==2.8.0
 uvicorn==0.54.0
 xarray==2026.7.0
 zarr==3.4.0

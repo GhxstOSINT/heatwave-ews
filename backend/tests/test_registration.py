@@ -24,16 +24,17 @@ class RegistrationTest(unittest.TestCase):
             "HEATSAFE_ALLOW_SIGNUP": "true",
             "HEATWATCH_SESSION_SECRET": "registration-test-secret-32-characters-long",
             "HEATWATCH_USERS_JSON": '{"admin":"unrelated-test-password"}',
+            "PUBLIC_BASE_URL": "https://testserver",
         }
         try:
-            with patch.dict(os.environ, env), TestClient(app) as client:
+            with patch.dict(os.environ, env), TestClient(app, base_url="https://testserver") as client:
                 self.assertTrue(client.get("/auth/config").json()["email_registration"])
                 result = client.post("/auth/register", json={"email": email.upper(), "password": password})
                 self.assertEqual(result.status_code, 201, result.text)
                 self.assertEqual(result.json()["user"]["role"], "viewer")
                 self.assertEqual(result.json()["user"]["username"], email)
-                token = result.json()["token"]
-                self.assertEqual(client.get("/auth/session", headers={"Authorization": f"Bearer {token}"}).status_code, 200)
+                self.assertNotIn("token", result.json())
+                self.assertEqual(client.get("/auth/session").status_code, 200)
                 self.assertEqual(client.post("/auth/register", json={"email": email, "password": password}).status_code, 409)
                 self.assertEqual(client.post("/auth/login", json={"username": email, "password": "incorrect"}).status_code, 401)
                 signed_in = client.post("/auth/login", json={"username": email, "password": password})

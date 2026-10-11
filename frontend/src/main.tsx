@@ -122,7 +122,7 @@ function App({ user }: { user: User }) {
     <main>
       <a className="skip-link" href="#district-panel">Skip to district details</a>
       <header className="topbar">
-        <a className="brand" href="/landing.html"><h1>HeatSafe AI</h1><p>Impact-led heat action support</p></a>
+        <a className="brand" href="/landing.html"><img src="/heatsafe-mark.svg" alt="" /><h1>HeatSafe AI</h1></a>
         <QueryBox />
         <span id="heatsafe-theme-slot" />
         <AuthPanel user={user} />

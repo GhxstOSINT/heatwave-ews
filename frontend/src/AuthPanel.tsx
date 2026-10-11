@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, send, setSessionToken } from "./api";
+import { User, send } from "./api";
 
 export function AuthPanel({ user }: { user: User }) {
   const [error, setError] = useState("");
@@ -7,7 +7,6 @@ export function AuthPanel({ user }: { user: User }) {
     setError("");
     try {
       await send<{ signed_out: boolean }>("POST", "/auth/logout");
-      setSessionToken(null);
       if (window.HeatSafeUI) window.HeatSafeUI.navigate("/login.html");
       else window.location.assign("/login.html");
     } catch {

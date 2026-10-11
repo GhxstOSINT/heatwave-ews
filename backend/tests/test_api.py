@@ -49,7 +49,7 @@ class ApiContractTest(unittest.TestCase):
     def auth_headers(self, client) -> dict[str, str]:
         response = client.post("/auth/login", json={"username": "officer", "password": "officer-demo"})
         self.assertEqual(response.status_code, 200)
-        return {"Authorization": f"Bearer {response.json()['token']}"}
+        return {}
 
     def setUp(self) -> None:
         now = datetime.now(UTC)

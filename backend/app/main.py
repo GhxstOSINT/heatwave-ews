@@ -2,6 +2,7 @@
 
 import json
 import hmac
+import ipaddress
 import logging
 import os
 import re
@@ -20,7 +21,6 @@ import requests
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 
 from app.advisories import IST, AdvisoryDraft, draft_advisory, lint_advisory
@@ -31,6 +31,7 @@ from app.forecast_upload import MAX_COMPRESSED_BYTES, stage_bundle
 from app.nl_query import QueryResult, process_nl_query
 from app.oauth import OAUTH_COOKIE, SESSION_COOKIE, authorization_url, client_credentials, configured_providers, exchange_identity, make_pending, public_base_url, read_pending, safe_next
 from app.repository import data_status, ensure_operational_tables, fetch_rows
+from app.security import RequestBodyLimitMiddleware, SlidingWindowLimiter
 from indices.composite import load_weights
 from models.health_data import HealthObservationBatch
 from models.health_impact import load_health_impact_config, relative_risk_sensitivity
@@ -97,7 +98,8 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="HeatSafe AI", version="0.1.0", lifespan=lifespan)
-_bearer = HTTPBearer(auto_error=False)
+_auth_limiter = SlidingWindowLimiter()
+app.add_middleware(RequestBodyLimitMiddleware)
 
 
 def _database_url() -> str:
@@ -106,10 +108,9 @@ def _database_url() -> str:
 
 def _current_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> SessionIdentity:
     """Return the signed-in database user and reject forged/stale identities."""
-    token = credentials.credentials if credentials is not None and credentials.scheme.lower() == "bearer" else request.cookies.get(SESSION_COOKIE)
+    token = request.cookies.get(SESSION_COOKIE)
     if not token:
         raise HTTPException(status_code=401, detail="Sign in before performing operational actions")
     try:
@@ -144,10 +145,9 @@ def _app_origin(request: Request) -> str:
 async def protect_strict_dashboard_api(request: Request, call_next):
     """Keep read-only map data behind authentication on public strict deployments."""
     path = request.url.path
-    public = path.startswith(("/auth/", "/assets/", "/docs", "/openapi.json", "/forecast-upload")) or path in {"/", "/health", "/landing.html", "/login.html", "/signup.html", "/dashboard.html", "/theme.css", "/theme.js", "/favicon.ico"}
+    public = path.startswith(("/auth/", "/assets/", "/forecast-upload")) or path in {"/", "/health", "/landing.html", "/login.html", "/signup.html", "/dashboard.html", "/theme.css", "/theme.js", "/favicon.ico", "/heatsafe-mark.svg"}
     if auth_mode() == "strict" and not public and request.method != "OPTIONS":
-        header = request.headers.get("authorization", "")
-        token = header[7:] if header.lower().startswith("bearer ") else request.cookies.get(SESSION_COOKIE)
+        token = request.cookies.get(SESSION_COOKIE)
         try:
             identity = read_session(token or "")
             rows = fetch_rows(_database_url(), "SELECT user_id FROM users WHERE user_id = %s AND username = %s AND role = %s", (identity.user_id, identity.username, identity.role))
@@ -156,6 +156,37 @@ async def protect_strict_dashboard_api(request: Request, call_next):
         except (ValueError, RuntimeError):
             return Response(content=json.dumps({"detail": "Sign in to view the dashboard"}), status_code=401, media_type="application/json")
     return await call_next(request)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Apply browser-side defense-in-depth headers on API and static responses."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+    response.headers.setdefault("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://tile.openstreetmap.org https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:")
+    if request.url.path.startswith("/auth/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    if auth_mode() == "strict" and _cookie_secure(request):
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
+def _limit_auth_requests(request: Request, route: str, limit: int, window: int) -> None:
+    """Apply process-local abuse limits; production should also enforce them at the edge."""
+    caller = request.client.host if request.client else "unknown"
+    if os.environ.get("TRUST_PROXY_HEADERS", "").strip().lower() == "true":
+        forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+        try:
+            caller = str(ipaddress.ip_address(forwarded))
+        except ValueError:
+            pass
+    allowed, retry_after = _auth_limiter.allow(route, caller, limit, window)
+    if not allowed:
+        raise HTTPException(status_code=429, detail="Too many attempts. Wait before trying again.", headers={"Retry-After": str(retry_after)})
 
 
 app.add_middleware(
@@ -194,7 +225,8 @@ def get_auth_config() -> dict[str, Any]:
 
 @app.post("/auth/login")
 def login(request: LoginRequest, response: Response, http_request: Request) -> dict[str, Any]:
-    """Exchange environment-backed credentials for a signed eight-hour session."""
+    """Exchange environment-backed credentials for an HttpOnly eight-hour session."""
+    _limit_auth_requests(http_request, "login", 10, 15 * 60)
     try:
         valid = verify_password(request.username, request.password)
     except (RuntimeError, json.JSONDecodeError) as error:
@@ -209,19 +241,22 @@ def login(request: LoginRequest, response: Response, http_request: Request) -> d
         )
         valid = bool(registered) and verify_registered_password(request.password, registered[0]["password_hash"])
     if not valid:
+        logger.warning("Authentication failed: method=password")
         raise HTTPException(status_code=401, detail="Invalid username or password")
     rows = fetch_rows(_database_url(), "SELECT user_id, username, role FROM users WHERE username = %s", (username,))
     if not rows:
         raise HTTPException(status_code=403, detail="Authenticated account is not provisioned in this deployment")
     identity = SessionIdentity(**rows[0])
+    logger.info("Authentication succeeded: method=password user_id=%s", identity.user_id)
     token = issue_session(identity)
     response.set_cookie(SESSION_COOKIE, token, max_age=8 * 60 * 60, httponly=True, secure=_cookie_secure(http_request), samesite="lax", path="/")
-    return {"token": token, "expires_in_seconds": 8 * 60 * 60, "user": rows[0]}
+    return {"expires_in_seconds": 8 * 60 * 60, "user": rows[0]}
 
 
 @app.post("/auth/register", status_code=201)
 def register(request: RegisterRequest, response: Response, http_request: Request) -> dict[str, Any]:
     """Create a new viewer account using a unique email and salted password hash."""
+    _limit_auth_requests(http_request, "register", 4, 60 * 60)
     if not registration_enabled():
         raise HTTPException(status_code=403, detail="Email registration is not enabled on this deployment")
     email = request.email.strip().lower()
@@ -238,21 +273,23 @@ def register(request: RegisterRequest, response: Response, http_request: Request
     except psycopg.Error as error:
         raise HTTPException(status_code=503, detail="Registration is temporarily unavailable. Please try again.") from error
     identity = SessionIdentity(user_id, email, "viewer")
+    logger.info("Account created: method=email user_id=%s", user_id)
     token = issue_session(identity)
     response.set_cookie(SESSION_COOKIE, token, max_age=8 * 60 * 60, httponly=True, secure=_cookie_secure(http_request), samesite="lax", path="/")
-    return {"token": token, "expires_in_seconds": 8 * 60 * 60, "user": {"user_id": user_id, "username": email, "role": "viewer"}}
+    return {"expires_in_seconds": 8 * 60 * 60, "user": {"user_id": user_id, "username": email, "role": "viewer"}}
 
 
 @app.post("/auth/logout")
-def logout(response: Response) -> dict[str, bool]:
+def logout(response: Response, request: Request) -> dict[str, bool]:
     """Clear the browser's HttpOnly session cookie."""
-    response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(SESSION_COOKIE, path="/", secure=_cookie_secure(request), httponly=True, samesite="lax")
     return {"signed_out": True}
 
 
 @app.get("/auth/oauth/{provider}/start")
 def oauth_start(provider: str, request: Request, next: str = "/dashboard.html") -> RedirectResponse:
     """Begin a provider flow with CSRF state and PKCE in a signed cookie."""
+    _limit_auth_requests(request, "oauth-start", 20, 15 * 60)
     if client_credentials(provider) is None:
         raise HTTPException(status_code=404, detail="Sign-in provider is not configured")
     try:
@@ -1659,7 +1696,8 @@ def get_replay(scenario_id: str) -> dict[str, Any]:
     except KeyError:
         raise HTTPException(status_code=404, detail="unknown scenario")
     except OSError as error:  # network failure on first (uncached) run
-        raise HTTPException(status_code=503, detail=f"replay data unavailable: {error}")
+        logger.warning("Replay data unavailable: scenario=%s error_type=%s", scenario_id, type(error).__name__)
+        raise HTTPException(status_code=503, detail="Replay data is temporarily unavailable. Please try again shortly.") from error
 
 
 # Render's single-origin image includes a built frontend. Local Compose keeps

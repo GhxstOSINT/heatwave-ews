@@ -3,8 +3,15 @@
 ## 2026-10-10 — Google and GitHub sign-in only
 
 - Removed the unused third provider from the backend allowlist, login UI, configuration examples, and new database constraints. Existing provider identities are preserved; the API will no longer start or complete sign-in for that provider.
-- GitHub OAuth credentials were configured privately in Render and the live `/auth/config` and authorization redirect were checked. Full user-consent login still needs a browser test.
-- Google OAuth remains pending a personal Google Cloud project, consent-screen configuration, and private Render credentials. No Google client secret is stored in the repository.
+- GitHub OAuth credentials were configured privately in Render and user-confirmed sign-in works.
+- Google OAuth was configured privately in Render and user-confirmed sign-in works. No provider client secret is stored in the repository.
+
+## 2026-10-11 — UI polish pass
+
+- Refined landing-page hierarchy and spacing, removed nested metric/callout cards, clarified that the homepage replay is historical while forecast refresh runs on a six-hour schedule, and improved responsive navigation.
+- Improved sign-in/sign-up provider states and recognizable provider marks; unavailable providers are no longer presented as active links.
+- Refined dashboard control sizing, responsive layouts, dark-theme map/table details, and reduced-motion handling.
+- Verified the frontend TypeScript production build and reviewed local landing and sign-in pages at desktop size. A local authenticated dashboard could not be visually checked because the API is not running in this checkout.
 
 ## Current status
 
@@ -197,8 +204,16 @@
 ## 2026-10-11 — first-time account authentication follow-up
 
 - Added the same configured Google and GitHub entry points to sign-up as sign-in. A first-time provider identity is provisioned as a viewer by the existing callback; returning identities sign in through the same flow.
-- Email registration and password sign-in now retain the server-issued session token in the tab as a fallback when the browser does not persist the HttpOnly cookie. The cookie remains the primary session mechanism.
+- Initial implementation retained the server-issued session token in the tab as a fallback when the browser did not persist the HttpOnly cookie. This was superseded by the 2026-10-11 security hardening, which removed JavaScript-readable bearer tokens and uses the HttpOnly cookie only.
 - Split provider callback failures into safe categories (state/origin, provider configuration, identity exchange, account storage) and log only provider, stage, HTTP status or exception type—never authorization codes or tokens. The login page gives a specific recovery message for configuration and storage failures.
 - Live Render logs showed prior Google callbacks ending on the generic provider-failed page. The exact upstream cause is not yet known; a fresh attempt after deploying this change is needed to identify and correct that configuration or storage error. GitHub's OAuth app has a configured callback but no completed users at this point.
 - A fresh Google attempt reached the callback but Google returned HTTP 401 before account provisioning. Added a safe phase marker to distinguish token-exchange rejection from user-info rejection on the next attempt; credentials and provider response bodies remain out of logs. The deployed Google OAuth credentials still require validation against the personal Google Cloud project's web client.
 - Follow-up confirmed GitHub sign-in works while Google still fails at token exchange with HTTP 401, even after the client ID and secret were checked as a pair. Added allow-listed provider error-code logging (`invalid_client`, `invalid_grant`, and related codes only) so the next Google attempt can distinguish stale client credentials from a rejected authorization code without exposing provider response text or secrets.
+
+## 2026-10-11 — OWASP security hardening and provider marks
+
+- Confirmed sign-in and sign-up use the multicolor Google G and GitHub Octocat SVG marks (not text initials), removing the unused G/GH placeholder metadata.
+- Added bounded request bodies, process-local login/registration/OAuth throttles, common browser security headers, protected strict-mode API docs, safe replay errors, and safe authentication event logging. The browser session now relies on the HttpOnly cookie instead of a JavaScript-readable bearer token; MapLibre popups render untrusted labels as text nodes.
+- Fixed the npm `source-map-js` high-severity advisory with a patched-version override. Added high-severity npm/Python audit checks in CI and weekly dependency update automation.
+- Verification: frontend production build passed; `npm audit --audit-level=high` reports zero findings. Backend regression tests were added but could not run here because the available Python interpreter has no FastAPI installation. Render deployment and live security headers remain unverified.
+- See `docs/SECURITY_REVIEW.md`; process-local rate limits, MFA/account recovery/session revocation, action SHA pinning, and production edge protections remain follow-up work.

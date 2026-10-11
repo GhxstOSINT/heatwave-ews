@@ -18,8 +18,8 @@ h4 { margin: 18px 0 8px; font-size: .82rem; text-transform: uppercase; letter-sp
 
 /* Top bar */
 .topbar { padding: 14px 3vw; display: flex; align-items: center; gap: 24px; border-bottom: 1px solid #ccd4cc; background: #fbfcf7; }
-.brand { min-width: 185px; }
-.brand p { margin: 2px 0 0; color: #607068; font-size: .7rem; }
+.brand { min-width: 185px; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand img { width: 38px; height: 38px; flex: 0 0 38px; }
 .query { position: relative; flex: 1; display: flex; max-width: 560px; margin-left: auto; }
 .query input { flex: 1; padding: 9px 12px; border: 1px solid #c5cec6; border-right: 0; border-radius: 4px 0 0 4px; background: white; font-size: .82rem; }
 .query > button { border: 0; background: #173e32; color: white; padding: 0 16px; border-radius: 0 4px 4px 0; cursor: pointer; }
@@ -200,3 +200,116 @@ button:disabled { cursor: not-allowed; }
 .ranking-tools input { padding: 5px 9px; border: 1px solid #ced5ce; border-radius: 16px; font-size: .72rem; background: white; }
 .ranking-tools button { border: 1px solid #ced5ce; background: transparent; padding: 5px 10px; border-radius: 16px; font-size: .72rem; cursor: pointer; color: #3f4d46; }
 .tracks em.ahead { color: #173e32; }
+
+/* Product-wide finish: calm surfaces, consistent controls, and scan-friendly dashboard density. */
+:root {
+  --hs-ink: #14251f;
+  --hs-muted: #536159;
+  --hs-line: #ccd4cc;
+  --hs-surface: #fbfcf7;
+  --hs-canvas: #f4f5ef;
+  --hs-forest: #173e32;
+  --hs-accent: #e97824;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+body { color: var(--hs-ink); background: var(--hs-canvas); }
+button, input, select, textarea { font-size: max(16px, .9em); }
+button:not(:disabled), a[href] { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a[href]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #176f8a; outline-offset: 3px; }
+.topbar, .controls, .ranking, .panel { border-color: var(--hs-line); }
+.topbar { min-height: 76px; padding: 12px clamp(16px, 3vw, 48px); gap: clamp(12px, 1.8vw, 24px); }
+.brand { min-width: 190px; }
+.brand h1 { font-size: clamp(1.45rem, 2vw, 1.9rem); }
+.query input, .login-form input, .ranking-tools input, .replay-select, .ops-body input, .ops-body select { min-height: 44px; border-radius: 8px; }
+.query input { border-radius: 9px 0 0 9px; }
+.query > button { min-width: 72px; min-height: 44px; border-radius: 0 9px 9px 0; }
+.login-form button, .session-card button { min-height: 42px; border-radius: 8px; }
+.session-card { min-width: 150px; gap: 3px 10px; }
+.session-card b { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-banner { padding: 10px clamp(16px, 3vw, 48px); line-height: 1.45; }
+.controls { align-items: center; padding: 12px clamp(16px, 3vw, 48px); }
+.layer-switch, .days { gap: 6px; }
+.layer-switch button, .days button, .tabs button { min-height: 42px; padding: 8px 13px; border-radius: 999px; }
+.replay-select { padding: 8px 12px; }
+.workspace { min-height: max(620px, calc(100vh - 190px)); }
+.map-shell { min-height: 560px; }
+.map-legend { gap: 6px; padding: 12px 14px; border-radius: 10px; font-size: .76rem; box-shadow: 0 8px 24px rgba(20,37,31,.12); }
+.map-caption { padding: 7px 10px; border-radius: 8px; font-size: .7rem; }
+.ranking { padding: 18px clamp(16px, 3vw, 48px) 22px; }
+.district-tabs { gap: 8px; }
+.district-tabs button { min-height: 42px; padding: 8px 12px; border-radius: 999px; }
+.panel { padding: 26px clamp(20px, 2.6vw, 40px); }
+.panel-heading { padding-bottom: 20px; }
+.metrics { gap: 2px; margin: 20px 0; border-radius: 12px; overflow: hidden; }
+.metrics article { min-height: 94px; padding: 14px; }
+.metrics span { min-height: 24px; font-size: .72rem; }
+.metrics strong { font-size: 1.65rem; }
+.chart { margin-bottom: 20px; }
+.chart figcaption { gap: 10px 16px; font-size: .74rem; }
+.ops-body button { min-height: 42px; padding: 9px 13px; border-radius: 8px; }
+.ops-body button.ghost { background: transparent; }
+.card { margin: 12px 0; padding: 16px; border-radius: 10px; }
+.card header { min-height: 30px; }
+.card header b { overflow-wrap: anywhere; }
+.tabs { gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; }
+.tabs button { flex: 0 0 auto; }
+.table-wrap { border: 1px solid #d9ded8; border-radius: 10px; }
+table { min-width: 520px; font-size: .78rem; }
+th, td { padding: 10px 9px; }
+td input { width: 72px; min-height: 40px; padding: 7px; border-radius: 7px; }
+.answer { border-radius: 10px; }
+
+@media (max-width: 980px) {
+  .topbar { align-items: center; }
+  .login-form { grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) auto; }
+  .workspace { min-height: 0; }
+  .map-shell { min-height: 58vh; }
+  .panel { max-height: none; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 12px 14px; gap: 10px; }
+  .brand { min-width: 0; flex: 1 1 45%; }
+  .brand img { width: 34px; height: 34px; flex-basis: 34px; }
+  .topbar > .heatsafe-theme-toggle { flex: 0 0 40px; }
+  .session-card { min-width: 0; grid-template-columns: minmax(0, 1fr) auto; }
+  .session-card b { max-width: 18ch; }
+  .session-card button { min-width: 76px; padding-inline: 8px; }
+  .login-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 7px; }
+  .login-form input { min-height: 44px; padding: 8px; }
+  .login-form button { min-height: 44px; padding-inline: 10px; }
+  .query { order: 4; flex-basis: 100%; }
+  .query input { min-width: 0; font-size: 16px; }
+  .query > button { min-width: 64px; }
+  .status-banner { align-items: flex-start; gap: 8px 10px; padding: 12px 14px; }
+  .status-banner strong { flex: 0 0 100%; }
+  .status-banner .counts { flex-wrap: wrap; }
+  .status-banner code { width: 100%; margin-left: 0; overflow-wrap: anywhere; }
+  .controls { align-items: stretch; padding: 12px 14px; }
+  .layer-switch, .days { width: 100%; }
+  .layer-switch button, .days button { flex: 1 1 auto; min-height: 44px; }
+  .replay-select { width: 100%; font-size: 16px; }
+  .map-shell { min-height: 52vh; }
+  .map-legend { top: 8px; left: 8px; gap: 4px; padding: 8px 10px; font-size: .68rem; }
+  .map-caption { right: 8px; left: 8px; bottom: 8px; font-size: .62rem; }
+  .ranking { padding: 16px 14px 18px; }
+  .section-title { align-items: flex-start; flex-direction: column; }
+  .ranking-tools { width: 100%; }
+  .ranking-tools input { min-width: 0; flex: 1; font-size: 16px; }
+  .ranking-tools button { min-height: 42px; }
+  .district-tabs button { min-height: 44px; }
+  .panel { padding: 20px 14px; }
+  .panel-heading { gap: 10px; }
+  .panel-heading h2 { font-size: 1.8rem; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metrics article { min-width: 0; padding: 12px; }
+  .tracks { grid-template-columns: 1fr; }
+  .ops-body .row { align-items: stretch; }
+  .ops-body .row button { flex: 1 1 150px; }
+  .reasoning ol { columns: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  button:not(:disabled), a[href] { transition-duration: .01ms; }
+}

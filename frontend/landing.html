@@ -3,7 +3,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23173e32%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%277%27 fill=%27%23e97824%27/%3E%3C/svg%3E" />
+<link rel="icon" href="/heatsafe-mark.svg" type="image/svg+xml" />
 <title>HeatSafe AI — Human Thermal Stress &amp; Heatwave Early Warning</title>
 <script src="/theme.js"></script>
 <link rel="stylesheet" href="/theme.css" />
@@ -37,8 +37,7 @@
     .heatsafe-intro-layout { position: relative; display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; min-height: 100dvh; padding: clamp(24px, 4.5vw, 64px); isolation: isolate; }
     .heatsafe-intro-top, .heatsafe-intro-bottom { display: flex; align-items: center; justify-content: space-between; gap: 24px; position: relative; z-index: 2; }
     .heatsafe-intro-brand { display: inline-flex; align-items: center; gap: 12px; font: 600 20px/1.1 "Newsreader", Georgia, serif; letter-spacing: -.02em; }
-    .heatsafe-intro-brand-mark { width: 24px; height: 24px; border: 2px solid #e97824; border-radius: 50%; position: relative; }
-    .heatsafe-intro-brand-mark::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: #e97824; }
+    .heatsafe-intro-brand-mark { width: 30px; height: 30px; display: block; }
     .heatsafe-intro-skip { border: 1px solid rgba(251,252,247,.48); border-radius: 4px; background: transparent; color: #fbfcf7; padding: 9px 14px; font: 600 12px/1 "DM Sans", sans-serif; cursor: pointer; }
     .heatsafe-intro-skip:hover, .heatsafe-intro-skip:focus-visible { background: #fbfcf7; color: #142b23; outline: none; }
     .heatsafe-intro-content { align-self: center; position: relative; z-index: 2; max-width: 720px; padding: 28px 0; }
@@ -75,7 +74,7 @@
 <div class="heatsafe-intro" id="heatsafe-intro" role="status" aria-live="polite" aria-label="Opening HeatSafe AI">
   <div class="heatsafe-intro-layout">
     <div class="heatsafe-intro-top">
-      <div class="heatsafe-intro-brand"><span class="heatsafe-intro-brand-mark" aria-hidden="true"></span>HeatSafe AI</div>
+      <div class="heatsafe-intro-brand"><img class="heatsafe-intro-brand-mark" src="/heatsafe-mark.svg" alt=""/>HeatSafe AI</div>
       <button class="heatsafe-intro-skip" id="heatsafe-intro-skip" type="button">Skip intro</button>
     </div>
     <div class="heatsafe-intro-graphic" aria-hidden="true">
@@ -144,19 +143,11 @@
 </script>
 <!-- 1. TOP BAR -->
 <header class="w-full bg-[#fbfcf7] border-b border-[#ccd4cc] px-6 lg:px-12 py-3.5 flex items-center justify-between sticky top-0 z-50">
-<div class="flex items-center gap-6">
-<div class="flex flex-col">
-<span class="font-sans uppercase text-[10px] font-bold tracking-wider text-[#536159]">
-          EXTREME HEAT EARLY WARNING · HUMAN THERMAL STRESS
-        </span>
-<a class="font-serif text-2xl font-semibold tracking-tight text-[#14251f] hover:text-[#173e32] transition-colors leading-none mt-1" href="#">
-          HeatSafe AI
-        </a>
-</div>
-<div class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#d9eee0] border border-[#b7d3bf] text-[11px] font-mono text-[#173e32]">
-<span class="w-1.5 h-1.5 rounded-full bg-[#2f855a]"></span>
-<span>Thermal stress outlook</span>
-</div>
+<div class="flex items-center">
+<a class="heatsafe-wordmark inline-flex items-center gap-2.5 no-underline font-serif text-2xl font-semibold tracking-tight text-[#14251f] hover:text-[#173e32] transition-colors leading-none" href="/landing.html">
+  <img src="/heatsafe-mark.svg" alt="" width="38" height="38" />
+  <span>HeatSafe AI</span>
+</a>
 </div>
 <!-- Right Side Navigation & Action Button -->
 <div class="flex items-center gap-6 md:gap-8">
@@ -166,7 +157,16 @@
 <a class="hover:text-[#173e32] transition-colors pb-1" href="#replays">Replays</a>
 <a class="hover:text-[#173e32] transition-colors pb-1" href="#limitations">Safeguards</a>
 </nav>
-<div class="flex items-center gap-3">
+<details class="heatsafe-mobile-nav md:hidden">
+<summary aria-label="Open page navigation">Menu <span class="heatsafe-menu-icon" aria-hidden="true"><i></i><i></i><i></i></span></summary>
+<nav aria-label="Page sections">
+<a href="#how-it-works">How it works</a>
+<a href="#two-tracks">Indices</a>
+<a href="#replays">Replays</a>
+<a href="#limitations">Safeguards</a>
+</nav>
+</details>
+<div class="heatsafe-header-actions flex items-center gap-3">
 <span id="heatsafe-theme-slot"></span>
 <a class="inline-flex items-center gap-1.5 bg-[#173e32] hover:bg-[#122e25] text-[#fbfcf7] px-4 py-2 text-xs font-semibold rounded transition-colors tracking-tight shadow-none" href="/login.html">
 <span>Sign in</span>
@@ -276,7 +276,7 @@
 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2f855a] opacity-75"></span>
 <span class="relative inline-flex rounded-full h-2 w-2 bg-[#2f855a]"></span>
 </span>
-<span>DATA CURRENT · Forecast refreshed every 6 hours · Alerts blocked automatically if data are older than 12 hours</span>
+<span>FORECAST PIPELINE · Refresh runs every 6 hours · Alerts block automatically when data are stale</span>
 </div>
 <div class="hidden md:flex items-center gap-3 text-[11px]">
 <span class="text-[#173e32]/80 font-sans">IMD criteria + human thermal stress</span>
@@ -432,7 +432,7 @@
 </li>
 </ul>
 </div>
-<div class="mt-8 bg-[#f5f7f2] border border-[#ccd4cc] rounded p-3 text-xs text-[#536159]">
+<div class="mt-8 pt-4 border-t border-[#ccd4cc] text-xs text-[#536159] leading-relaxed">
 <strong class="text-[#14251f] font-medium">Blind spot:</strong> temperature-only criteria cannot see humidity, so humid coastal heat can be hazardous while the thermometer looks near normal.
           </div>
 </div>
@@ -463,7 +463,7 @@
 </li>
 </ul>
 </div>
-<div class="mt-8 bg-[#f5f7f2] border border-[#ccd4cc] rounded p-3 text-xs text-[#536159]">
+<div class="mt-8 pt-4 border-t border-[#ccd4cc] text-xs text-[#536159] leading-relaxed">
 <strong class="text-[#14251f] font-medium">Same day:</strong> Heat Index 53.2°C. Humid air slows sweat evaporation, so the body sheds less heat at the same air temperature.
           </div>
 </div>
@@ -501,7 +501,7 @@
 <p class="font-sans text-xs text-[#536159] leading-relaxed mb-4">
             Prolonged dry heat. On 28 May, 126 of 641 districts are red; Banda reaches 48.6°C, +6.6°C above normal.
           </p>
-<div class="bg-[#f5f7f2] border border-[#ccd4cc] rounded p-2.5 mb-4">
+<div class="border-t border-[#ccd4cc] pt-3 mb-4">
 <span class="text-[10px] uppercase font-bold text-[#536159] block">Peak UTCI · Barmer, 27 May</span>
 <span class="font-serif text-2xl font-semibold text-[#c9362b]">50.5°C</span>
 </div>
@@ -531,7 +531,7 @@
 <p class="font-sans text-xs text-[#536159] leading-relaxed mb-4">
             Heat along the east coast and inland Odisha, with humid air on the coast.
           </p>
-<div class="bg-[#f5f7f2] border border-[#ccd4cc] rounded p-2.5 mb-4">
+<div class="border-t border-[#ccd4cc] pt-3 mb-4">
 <span class="text-[10px] uppercase font-bold text-[#536159] block">Peak WBGT (est.) · East Godavari, 27 Apr</span>
 <span class="font-serif text-2xl font-semibold text-[#e97824]">37.5°C</span>
 </div>
@@ -561,7 +561,7 @@
 <p class="font-sans text-xs text-[#536159] leading-relaxed mb-4">
             Delayed monsoon and hot nights over south Bihar; linked to many heat deaths.
           </p>
-<div class="bg-[#f5f7f2] border border-[#ccd4cc] rounded p-2.5 mb-4">
+<div class="border-t border-[#ccd4cc] pt-3 mb-4">
 <span class="text-[10px] uppercase font-bold text-[#536159] block">Warmest night (Tmin) · Kaimur (Bhabua), 15 Jun</span>
 <span class="font-serif text-2xl font-semibold text-[#c9362b]">34.4°C</span>
 </div>
@@ -591,7 +591,7 @@
 <p class="font-sans text-xs text-[#536159] leading-relaxed mb-4">
             One of India's deadliest heatwaves. ERA5 runs a few degrees below station records.
           </p>
-<div class="bg-[#f5f7f2] border border-[#ccd4cc] rounded p-2.5 mb-4">
+<div class="border-t border-[#ccd4cc] pt-3 mb-4">
 <span class="text-[10px] uppercase font-bold text-[#536159] block">Peak Tmax · Guntur, 21 May</span>
 <span class="font-serif text-2xl font-semibold text-[#c9362b]">46.5°C</span>
 </div>

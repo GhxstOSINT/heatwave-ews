@@ -1,6 +1,6 @@
 import { FormEvent, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { AuthConfig, LoginResponse, User, getJson, send, setSessionToken } from "./api";
+import { AuthConfig, LoginResponse, User, getJson, send } from "./api";
 import { AuthProviders } from "./AuthProviders";
 import "./styles.css";
 import "./login.css";
@@ -10,6 +10,7 @@ const destination = requested === "/dashboard.html" || (requested?.startsWith("/
 
 function Signup() {
   const [config, setConfig] = useState<AuthConfig | null>(null);
+  const [configFailed, setConfigFailed] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -17,8 +18,7 @@ function Signup() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setSessionToken(null);
-    getJson<AuthConfig>("/auth/config").then(setConfig, () => setError("The account service is unavailable. Please try again shortly."));
+    getJson<AuthConfig>("/auth/config").then(setConfig, () => { setConfigFailed(true); setError("The account service is unavailable. Please try again shortly."); });
     getJson<User>("/auth/session").then(() => window.location.replace(destination), () => undefined);
   }, []);
 
@@ -28,7 +28,7 @@ function Signup() {
     setBusy(true);
     setError("");
     send<LoginResponse>("POST", "/auth/register", { email: email.trim(), password })
-      .then((result) => { setSessionToken(result.token); if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
+      .then(() => { if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
       .catch((reason: Error) => setError(reason.message === "Failed to fetch" ? "The account service is unavailable. Please try again shortly." : reason.message))
       .finally(() => setBusy(false));
   };
@@ -37,7 +37,7 @@ function Signup() {
     <div className="auth-shell">
       <a className="auth-skip" href="#create-account">Skip to create account</a>
       <section className="auth-story" aria-label="About HeatSafe AI">
-        <a className="auth-brand" href="/landing.html"><span className="auth-brand-mark" aria-hidden="true"><i /></span><span>HeatSafe AI</span></a>
+        <a className="auth-brand" href="/landing.html"><img className="auth-brand-mark" src="/heatsafe-mark.svg" alt="" /><span>HeatSafe AI</span></a>
         <div className="auth-story-content">
           <div className="auth-signal" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div>
           <h1>See the heat.<br /><em>Understand the risk.</em></h1>
@@ -56,7 +56,7 @@ function Signup() {
         <div className="auth-form-wrap">
           <h2>Create your account.</h2>
           <p className="auth-intro">Set up read-only access to the HeatSafe AI dashboard.</p>
-          <AuthProviders config={config} destination={destination} action="sign up" />
+          <AuthProviders config={config} destination={destination} action="sign up" configFailed={configFailed} />
           {config?.providers.length ? <p className="auth-help auth-provider-note">A new Google or GitHub identity receives viewer access automatically. An existing identity signs in.</p> : null}
           {config?.email_registration && <div className="auth-divider"><span>or create an account with email</span></div>}
           {config && !config.email_registration ? (

@@ -8,6 +8,21 @@ setWorkerUrl(workerUrl);
 type Bounds = [[number, number], [number, number]];
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
+function popupContent(title: unknown, rows: [string, unknown][]): HTMLElement {
+  const content = document.createElement("div");
+  const heading = document.createElement("b");
+  heading.textContent = String(title ?? "");
+  content.append(heading);
+  rows.forEach(([label, value]) => {
+    content.append(document.createElement("br"));
+    content.append(document.createTextNode(label));
+    const detail = document.createElement("b");
+    detail.textContent = String(value ?? "");
+    content.append(detail);
+  });
+  return content;
+}
+
 function boundsOf(geometries: (GeoJSON.Geometry | null)[]): Bounds {
   let west = 180, south = 90, east = -180, north = -90;
   const walk = (node: unknown): void => {
@@ -105,14 +120,17 @@ export function MapView({ districts, rows, layer, selectedId, wards, onSelect }:
         const p = event.features?.[0]?.properties;
         if (!p) return;
         instance.getCanvas().style.cursor = "pointer";
-        popup.setLngLat(event.lngLat).setHTML(
-          `<b>${p.name}</b> · ${p.state}<br/>Alert: <b>${p.level ?? "blocked"}</b><br/>Tmax ${fmt(p.tmax_c)}°C (${p.departure_c == null || p.departure_c === "null" ? "no normal" : `${Number(p.departure_c) >= 0 ? "+" : ""}${fmt(Number(p.departure_c))}°C vs normal`})<br/>UTCI ${fmt(Number(p.utci_c))} · WBGT ${fmt(Number(p.wbgt_est_c))} · HI ${p.heat_index_c == null || p.heat_index_c === "null" ? "—" : fmt(Number(p.heat_index_c))}`,
-        ).addTo(instance);
+        const departure = p.departure_c == null || p.departure_c === "null" ? "no normal" : `${Number(p.departure_c) >= 0 ? "+" : ""}${fmt(Number(p.departure_c))}°C vs normal`;
+        popup.setLngLat(event.lngLat).setDOMContent(popupContent(`${String(p.name ?? "")} · ${String(p.state ?? "")}`, [
+          ["Alert: ", p.level ?? "blocked"],
+          ["Tmax: ", `${fmt(Number(p.tmax_c))}°C (${departure})`],
+          ["UTCI: ", `${fmt(Number(p.utci_c))} · WBGT ${fmt(Number(p.wbgt_est_c))} · HI ${p.heat_index_c == null || p.heat_index_c === "null" ? "—" : fmt(Number(p.heat_index_c))}`],
+        ])).addTo(instance);
       });
       instance.on("mouseleave", "district-fill", () => { instance.getCanvas().style.cursor = ""; popup.remove(); });
       instance.on("mousemove", "ward-fill", (event) => {
         const p = event.features?.[0]?.properties;
-        if (p) popup.setLngLat(event.lngLat).setHTML(`<b>#${p.rank} ${p.name}</b><br/>${Number(p.population).toLocaleString("en-IN")} people (WorldPop 2020)`).addTo(instance);
+        if (p) popup.setLngLat(event.lngLat).setDOMContent(popupContent(`#${String(p.rank ?? "")} ${String(p.name ?? "")}`, [["Population: ", `${Number(p.population).toLocaleString("en-IN")} people (WorldPop 2020)`]])).addTo(instance);
       });
       ready.current = true;
       sync();

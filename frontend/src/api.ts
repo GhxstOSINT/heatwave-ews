@@ -22,7 +22,7 @@ export type Ward = { ward_id: string; name: string; population_estimate: number;
 export type Vulnerability = { status: "available" | "unavailable"; data_vintage: string | null; items: Ward[] };
 export type User = { user_id: string; username: string; role: string; display_name?: string };
 export type AuthConfig = { mode: "demo" | "strict"; production_ready: boolean; banner: string; providers: ("google" | "github")[]; email_registration: boolean };
-export type LoginResponse = { token: string; expires_in_seconds: number; user: User };
+export type LoginResponse = { expires_in_seconds: number; user: User };
 export type WardOutlookItem = Ward & { district_alert_level: string; exposure_percentile: number; response_priority_score: number; response_priority: "routine" | "watch" | "high" | "urgent" };
 export type WardOutlook = { status: "available" | "unavailable"; meteorology_resolution: string; ward_meteorology_downscaled: false; basis: string; items: WardOutlookItem[] };
 export type HealthDataStatus = { status: "connected" | "awaiting_approved_data"; operational_health_model: false; absolute_outcome_forecast_enabled: false; message: string; rows: number; wards: number };
@@ -34,19 +34,16 @@ export type Task = { task_id: string; task_type: string; title: string; status: 
 export type AuditEntry = { audit_id: string; user_id: string; action: string; entity_type: string; entity_id: string; new_value: unknown; created_at: string };
 export type Allocation = { alert_level: string; basis: string; items: { ward_id: string; name: string; population_estimate: number; lat: number; lon: number; resources: Record<string, number> }[] };
 
-const TOKEN_KEY = "heatwatch-session";
-export const getSessionToken = () => window.sessionStorage.getItem(TOKEN_KEY);
-export const setSessionToken = (token: string | null) => token ? window.sessionStorage.setItem(TOKEN_KEY, token) : window.sessionStorage.removeItem(TOKEN_KEY);
+// Remove the previous JavaScript-readable session token after moving to cookies only.
+try { window.sessionStorage.removeItem("heatwatch-session"); } catch { /* Storage can be disabled by the browser. */ }
 
 async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-  const token = getSessionToken();
   const response = await fetch(`${API}${path}`, {
     method,
     signal,
     credentials: "include",
     headers: {
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });

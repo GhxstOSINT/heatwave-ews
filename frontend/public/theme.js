@@ -14,15 +14,36 @@
   apply(readPreference() === "dark" ? "dark" : readPreference() === "light" ? "light" : media.matches ? "dark" : "light");
   document.documentElement.classList.add("page-enter");
 
-  const icons = {
-    dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.7 8.7 0 1 0 10.7 10.7Z"/></svg>',
-    light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  const makeIcon = (theme) => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.8");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("aria-hidden", "true");
+    if (theme === "dark") {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.7 8.7 0 1 0 10.7 10.7Z");
+      svg.append(path);
+    } else {
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", "12");
+      circle.setAttribute("cy", "12");
+      circle.setAttribute("r", "3.5");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4");
+      svg.append(circle, path);
+    }
+    return svg;
   };
   let toggle;
   const renderToggle = () => {
     if (!toggle) return;
     const dark = current() === "dark";
-    toggle.innerHTML = `${icons[dark ? "light" : "dark"]}<span>${dark ? "Light mode" : "Dark mode"}</span>`;
+    const label = document.createElement("span");
+    label.textContent = dark ? "Light mode" : "Dark mode";
+    toggle.replaceChildren(makeIcon(dark ? "light" : "dark"), label);
     toggle.setAttribute("aria-label", `Switch to ${dark ? "light" : "dark"} mode`);
     toggle.setAttribute("aria-pressed", String(dark));
   };
@@ -64,6 +85,10 @@
   document.addEventListener("click", (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (link?.closest(".heatsafe-mobile-nav")) {
+      const menu = link.closest("details");
+      if (menu) menu.open = false;
+    }
     if (!link || link.target && link.target !== "_self" || link.hasAttribute("download")) return;
     const url = new URL(link.href, window.location.href);
     if (url.origin !== window.location.origin || !/^\/(?:landing|login|signup|dashboard)\.html$/.test(url.pathname)) return;

@@ -16,6 +16,9 @@ services:
           property: connectionString
       - key: AUTH_MODE
         value: strict
+      # Render is the trusted public reverse proxy; use its client-IP header for auth throttles.
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
       - key: HEATSAFE_ALLOW_SIGNUP
         value: "true"
       - key: HEATSAFE_AUTO_INGEST

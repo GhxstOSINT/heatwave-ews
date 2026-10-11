@@ -1,6 +1,6 @@
 import { FormEvent, StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { AuthConfig, LoginResponse, User, getJson, send, setSessionToken } from "./api";
+import { AuthConfig, LoginResponse, User, getJson, send } from "./api";
 import { AuthProviders } from "./AuthProviders";
 import "./styles.css";
 import "./login.css";
@@ -12,6 +12,7 @@ function safeDestination() {
 
 function Login() {
   const [config, setConfig] = useState<AuthConfig | null>(null);
+  const [configFailed, setConfigFailed] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,8 +30,7 @@ function Login() {
   const destination = safeDestination();
 
   useEffect(() => {
-    setSessionToken(null);
-    getJson<AuthConfig>("/auth/config").then(setConfig, () => setError("The sign-in service is unavailable. Please wait a moment and try again."));
+    getJson<AuthConfig>("/auth/config").then(setConfig, () => { setConfigFailed(true); setError("The sign-in service is unavailable. Please wait a moment and try again."); });
     getJson<User>("/auth/session").then(() => window.location.replace(destination), () => undefined);
   }, []);
 
@@ -39,7 +39,7 @@ function Login() {
     setBusy(true);
     setError("");
     send<LoginResponse>("POST", "/auth/login", { username: username.trim(), password })
-      .then((result) => { setSessionToken(result.token); if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
+      .then(() => { if (window.HeatSafeUI) window.HeatSafeUI.navigate(destination); else window.location.assign(destination); })
       .catch((reason: Error) => setError(reason.message === "Failed to fetch" ? "The sign-in service is unavailable. Please wait a moment and try again." : reason.message))
       .finally(() => setBusy(false));
   };
@@ -48,7 +48,7 @@ function Login() {
     <div className="auth-shell">
       <a className="auth-skip" href="#sign-in">Skip to sign in</a>
       <section className="auth-story" aria-label="About HeatSafe AI">
-        <a className="auth-brand" href="/landing.html"><span className="auth-brand-mark" aria-hidden="true"><i /></span><span>HeatSafe AI</span></a>
+        <a className="auth-brand" href="/landing.html"><img className="auth-brand-mark" src="/heatsafe-mark.svg" alt="" /><span>HeatSafe AI</span></a>
         <div className="auth-story-content">
           <div className="auth-signal" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div>
           <h1>See the heat.<br /><em>Understand the risk.</em></h1>
@@ -68,7 +68,7 @@ function Login() {
         <div className="auth-form-wrap">
           <h2>Welcome back.</h2>
           <p className="auth-intro">Sign in to open the HeatSafe AI dashboard.</p>
-          <AuthProviders config={config} destination={destination} action="sign in" />
+          <AuthProviders config={config} destination={destination} action="sign in" configFailed={configFailed} />
           <div className="auth-divider"><span>or use your email and password</span></div>
           <form className="auth-form" onSubmit={submit}>
             <label htmlFor="auth-username">Email or assigned username</label>
