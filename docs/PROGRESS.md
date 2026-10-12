@@ -222,3 +222,7 @@
 
 - Replaced the old GitHub icon path with GitHub Primer's current `mark-github-24` vector and corrected the icon contrast to black on white in both themes. The previous white fill made the circular mark look like a white blob with a dark cat cutout.
 - Verified the frontend production build and visually checked the sign-in page in light and dark modes. Sign-in and sign-up share the same provider component.
+
+## 2026-10-12 — repository access to live demo
+
+- Added prominent live demo, sign-in, and viewer sign-up links near the top of the README so visitors can reach the hosted application from the repository.

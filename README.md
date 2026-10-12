@@ -2,6 +2,8 @@
 
 ### Extreme heat early warning, explained as human thermal stress
 
+**Live demo:** [Open HeatSafe AI](https://heatsafe-ai-demo.onrender.com/) · [Sign in](https://heatsafe-ai-demo.onrender.com/login.html) · [Create a viewer account](https://heatsafe-ai-demo.onrender.com/signup.html)
+
 HeatSafe AI is a decision-support prototype for [SIH26083](https://sih.gov.in/): **Extreme Heatwave Early Warning and Human Thermal Stress Index**. It turns an open seven-day weather forecast into district-level thermal-stress indicators, transparent alerts, and a human-reviewed heat-action workflow.
 
 > **Prototype, not an official warning.** HeatSafe AI does not issue IMD bulletins, predict a number of deaths or hospital admissions, or send real public SMS/WhatsApp alerts. Use official IMD and local-authority guidance for operational decisions.
